@@ -1,3 +1,8 @@
+package main.java;
+
+import main.java.ItemRepository;
+import main.java.SalesPromotionRepository;
+
 import java.util.List;
 
 /*
@@ -6,15 +11,73 @@ import java.util.List;
 public class App {
     private ItemRepository itemRepository;
     private SalesPromotionRepository salesPromotionRepository;
-
     public App(ItemRepository itemRepository, SalesPromotionRepository salesPromotionRepository) {
         this.itemRepository = itemRepository;
         this.salesPromotionRepository = salesPromotionRepository;
     }
-
     public String bestCharge(List<String> inputs) {
-        //TODO: write code here
+        StringBuilder sb;
+        sb = new StringBuilder();
+        int money = 0,total = 0;
+        String saleMsg = "";
+        StringBuilder saleItems = new StringBuilder();
+        sb.append("============= 订餐明细 =============\n");
+        for(String input : inputs){
+            String[] str = input.split("x");
+            String name = str[0].trim();
+            String count = str[1].trim();
+            List<Item> ilist = itemRepository.findAll();
+            List<SalesPromotion> salesList = salesPromotionRepository.findAll();
+            for(Item item : ilist){
+                if(name.equals(item.getId())){
+                    sb.append(item.getName()).append(" x ").append(count).append(" = ").append((int) item.getPrice() * Integer.parseInt(count)).append("元\n");
+                    total += (int)item.getPrice()*Integer.parseInt(count);
+                }
+            }
+            for(SalesPromotion sp : salesList){
+                List<String> list =  sp.getRelatedItems();
+                if(list.size() > 0 ){
+                    for(String s : list){
+                        if(s.equals(name)){
+                            for(Item item : ilist){
+                                if(name.equals(item.getId())){
+                                    money += (int)(item.getPrice()*Integer.parseInt(count))/2;
+                                    saleMsg = sp.getDisplayName();
+                                    saleItems.append(item.getName()).append("，");
+                                }
+                            }
+                        }
+                    }
 
-        return null;
+                }else{
+                    saleMsg = sp.getDisplayName();
+                }
+            }
+
+        }
+        sb.append("-----------------------------------\n");
+        if(total < 30 && money == 0){
+            sb.append("总计：").append(total).append("元\n");
+        }else if(total < 30 && money > 0){
+            sb.append("使用优惠:\n");
+            sb.append(saleMsg).append("(").append(saleItems.substring(0, saleItems.length() - 1)).append(")，省").append(money).append("元\n-----------------------------------\n");
+            sb.append("总计：").append(total - money).append("元\n");
+        }else if(total > 30 && money == 0){
+            sb.append("使用优惠:\n");
+            sb.append(saleMsg).append("，省6元\n-----------------------------------\n");
+            sb.append("总计：").append(total - 6).append("元\n");
+        }else if(total > 30 && money > 0){
+            if((total-6) <= (total-money)){
+                sb.append("使用优惠:\n");
+                sb.append("满30减6元，省6元\n-----------------------------------\n");
+                sb.append("总计：").append(total - 6).append("元\n");
+            }else{
+                sb.append("使用优惠:\n");
+                sb.append(saleMsg).append("(").append(saleItems.substring(0, saleItems.length() - 1)).append(")，省").append(money).append("元\n-----------------------------------\n");
+                sb.append("总计：").append(total - money).append("元\n");
+            }
+        }
+        sb.append("===================================");
+        return  sb.toString();
     }
 }
